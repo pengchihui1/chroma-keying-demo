@@ -22,8 +22,8 @@ let processor = {
         audio: true,
         video: {
           facingMode: "user",
-          width: 160,
-          height: 96,
+          width: 592,
+          height: 720,
           frameRate: {
             ideal: 30,
           },
@@ -32,30 +32,33 @@ let processor = {
       
       const stream = await  navigator.mediaDevices.getUserMedia(videoConfig);
       this.video = document.getElementById("video");
-      // this.video.srcObject =stream
-      this.src="media/video.mp4"
+      this.video.srcObject =stream
       this.video.onloadedmetadata = () => {
         this.video.play();
       };
       this.c1 = document.getElementById("c1");
       this.ctx1 = this.c1.getContext("2d");
       this.c2 = document.getElementById("c2");
+    
       this.ctx2 = this.c2.getContext("2d");
       let self = this;
       // 點擊事件
       this.video.addEventListener("play", function() {
           self.width = self.video.videoWidth ;
-          self.height = self.video.videoHeight ;
+          self.height = self.video.videoHeight;
           self.timerCallback();
         }, false);
     },
   
     computeFrame: function() {
       const rgba = [0, 0, 0, 255];
-      const tolerance = 180;
-      var imgData = null;
+      const tolerance = 150;
       const [r0, g0, b0, a0] = rgba;
       var r, g, b, a;
+
+      this.c2.style.backgroundImage="url(/media/Earth.png)"
+      this.c2.style.backgroundRepeat="no-repeat"
+      this.c2.style.backgroundPosition="-49px -64px"
 
       // 獲得來之視頻裏canvas的内容
       this.ctx1.drawImage(this.video, 0, 0, this.width, this.height);

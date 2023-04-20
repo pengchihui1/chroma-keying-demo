@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      body {
+        background: black;
+        color:#CCCCCC; 
+      }
+      div {
+        float: left;
+        border :1px solid #444444;
+        padding:10px;
+        margin: 10px;
+        background:#3B3B3B;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div >
+      <video id="video" src="video.mp4"  width="592" height="720"  controls="true"/>
+    </div>
+    <div>
+      <canvas id="c1" width="592" height="792" style="display: none;"></canvas>
+      <canvas id="c2" width="592" height="792"></canvas>
+    </div>
+  <script type="text/javascript" src="processor.js"></script>
+
+  </body>
+</html>
