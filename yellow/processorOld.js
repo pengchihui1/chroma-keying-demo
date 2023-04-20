@@ -18,8 +18,8 @@ let processor = {
     this.ctx2 = this.c2.getContext("2d");
     let self = this;
     this.video.addEventListener("play", function() {
-        self.width = self.video.videoWidth / 2;
-        self.height = self.video.videoHeight / 2;
+        self.width = self.video.videoWidth /4;
+        self.height = self.video.videoHeight / 4;
         self.timerCallback();
       }, false);
   },
@@ -28,7 +28,7 @@ let processor = {
     this.ctx1.drawImage(this.video, 0, 0, this.width, this.height);
     let frame = this.ctx1.getImageData(0, 0, this.width, this.height);
         let l = frame.data.length / 4;
-
+    // 去除黃色
     for (let i = 0; i < l; i++) {
       let r = frame.data[i * 4 + 0];
       let g = frame.data[i * 4 + 1];
@@ -36,6 +36,7 @@ let processor = {
       if (g > 100 && r > 100 && b < 43)
         frame.data[i * 4 + 3] = 0;
     }
+
     this.ctx2.putImageData(frame, 0, 0);
     return;
   }
