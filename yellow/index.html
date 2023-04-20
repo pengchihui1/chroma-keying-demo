@@ -6,10 +6,15 @@
         background: black;
         color:#CCCCCC; 
       }
-      /* #c2 {
-        background-image: url(media/foo.png);
+      #c2 {
+        background-image: url(/media/Earth.png);
         background-repeat: no-repeat;
-      } */
+        /* background-size: 90px 160px; */
+        /* background-size: cover; */
+        background-size: contain;
+        background-repeat: no-repeat;
+
+      }
       div {
         float: left;
         border :1px solid #444444;
@@ -25,10 +30,10 @@
       <video id="video" src="/media/video.mp4"  width="300" height="300"  controls="true"/>
     </div>
     <div>
-      <canvas id="c1" width="300" height="300" ></canvas>
-      <canvas id="c2" width="300" height="300"></canvas>
+      <canvas id="c1" width="200" height="200"></canvas>
+      <canvas id="c2" width="200" height="200"></canvas>
     </div>
-  <!-- <script type="text/javascript" src="processor.js"></script> -->
-  <script type="text/javascript" src="processorOld.js"></script>
+  <script type="text/javascript" src="processor.js"></script>
+
   </body>
 </html>

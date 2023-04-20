@@ -15,11 +15,12 @@ let processor = {
     this.c1 = document.getElementById("c1");
     this.ctx1 = this.c1.getContext("2d");
     this.c2 = document.getElementById("c2");
+    // this.c2.style.backgroundImage="/media/Earth.png"
     this.ctx2 = this.c2.getContext("2d");
     let self = this;
     this.video.addEventListener("play", function() {
-        self.width = self.video.videoWidth /4;
-        self.height = self.video.videoHeight / 4;
+        self.width = self.video.videoWidth /2;
+        self.height = self.video.videoHeight /2;
         self.timerCallback();
       }, false);
   },
