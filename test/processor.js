@@ -65,7 +65,7 @@ let processor = {
       let frame = this.ctx1.getImageData(0, 0, this.width, this.height);
           let l = frame.data.length / 4;
   
-      // 去綠幕處理
+      // 去黃色處理
       // for (let i = 0; i < l; i++) {
       //   let r = frame.data[i * 4 + 0];
       //   let g = frame.data[i * 4 + 1];
@@ -75,17 +75,27 @@ let processor = {
       // }
 
       // 去除背景
-      for (let i = 0; i < frame.data.length; i += 4) {
-        r = frame.data[i];
-        g = frame.data[i + 1];
-        b = frame.data[i + 2];
-        a = frame.data[i + 3];
-        const t = Math.sqrt((r - r0) ** 2 + (g - g0) ** 2 + (b - b0) ** 2 + (a - a0) ** 2);
-        if (t > tolerance) {
-          frame.data[i] = 0;
-          frame.data[i + 1] = 0;
-          frame.data[i + 2] = 0;
-          frame.data[i + 3] = 0;
+      // for (let i = 0; i < frame.data.length; i += 4) {
+      //   r = frame.data[i];
+      //   g = frame.data[i + 1];
+      //   b = frame.data[i + 2];
+      //   a = frame.data[i + 3];
+      //   const t = Math.sqrt((r - r0) ** 2 + (g - g0) ** 2 + (b - b0) ** 2 + (a - a0) ** 2);
+      //   if (t > tolerance) {
+      //     frame.data[i] = 0;
+      //     frame.data[i + 1] = 0;
+      //     frame.data[i + 2] = 0;
+      //     frame.data[i + 3] = 0;
+      //   }
+      // }
+
+      for (let i = 0; i < l; i++) {
+        let r = frame.data[i * 4 + 0];
+        let g = frame.data[i * 4 + 1];
+        let b = frame.data[i * 4 + 2];
+        //rgb(8 204 4)
+        if (r < 50 && g > 100 && b > 100) {
+          frame.data[i * 4 + 3] = 0;
         }
       }
 
