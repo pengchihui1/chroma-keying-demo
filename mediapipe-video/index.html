@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <div class="container">
+    <!-- 这里先申明一个video组件用于获取视频 后续我们通过js隐藏掉 -->
+    <video class="input_video"></video>
+    <!-- 这里是画布用于绘制背景和识别结果 -->
+    <canvas class="output_canvas" width="1280px" height="720px"></canvas>
+  </div>
+</body>
+
+<script type="module">
+    const videoElement = document.getElementsByClassName('input_video')[0];
+    videoElement.style.display = 'none';
+    const canvasElement = document.getElementsByClassName('output_canvas')[0];
+    // 获取canvas
+    const canvasCtx = canvasElement.getContext('2d');
+
+    /**
+     * 首先构造一张背景图 
+     */
+    var back = new Image();
+    back.src = 'https://img.zcool.cn/community/01bb7a584f4d41a801219c77548f65.jpg@1280w_1l_2o_100sh.jpg';
+
+    
+    /**
+     * 识别结果回调
+     */
+    function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      //先画摄像头获取到的图片
+      canvasCtx.drawImage(
+         results.image, 0, 0, canvasElement.width, canvasElement.height);
+      /**
+       * 把识别的目标块（人）和原图绘制在一起 并且保留重叠的部分的源图部分 其他部分透明掉
+       * destination-in ：目标图形和源图形重叠的部分会被保留（源图形），其余显示为透明，不懂的同学去了解一下globalCompositeOperation的关系
+       */
+      canvasCtx.globalCompositeOperation = 'destination-in';
+      canvasCtx.drawImage(results.segmentationMask, 0, 0,
+                          canvasElement.width, canvasElement.height);
+
+      /**
+       * 把背景图绘制上去 并且通过位置关系把源图和目标图重叠的源图部分保留，
+       * destination-atop：目标图形位于源图形上，两者重叠切都不透明的地方显示目标图形，源图形不透明而目标图形透明的地方显示源图形，其余显示透明
+       */
+      canvasCtx.globalCompositeOperation = 'destination-atop';
+      canvasCtx.drawImage(back, 0, 0,
+                          canvasElement.width, canvasElement.height);
+
+      //最后直接在当前画布最上面覆盖摄像头的画面 并且缩小为1/4
+      canvasCtx.globalCompositeOperation = 'source-over';
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width / 4, canvasElement.height / 4);
+      
+      canvasCtx.restore();
+    }
+    
+    const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+    }});
+    selfieSegmentation.setOptions({
+      modelSelection: 1,
+    });
+    selfieSegmentation.onResults(onResults);
+    
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await selfieSegmentation.send({image: videoElement});
+      },
+      width: 1280,
+      height: 720
+    });
+    camera.start();
+    </script>
+</html>
