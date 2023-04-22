@@ -49,6 +49,10 @@ class Camera {
 
   // 不斷出發的攝像頭檢測
   async renderVideoCanvasResult(webcam, model) {
+    this.videoCanvas.style.backgroundImage = "url(/media/Earth.png)"
+    this.videoCanvas.style.backgroundRepeat = "no-repeat"
+    this.videoCanvas.style.backgroundPosition = "-49px -64px"
+    this.videoCanvas.style.transform = "rotateY(180deg)";
     // Set initial recurrent state
     let [r1i, r2i, r3i, r4i] = [tf.tensor(0.), tf.tensor(0.), tf.tensor(0.), tf.tensor(0.)];
 
@@ -81,10 +85,6 @@ class Camera {
     this.videoCanvas.height = height;
     this.videoCanvas.getContext('2d').putImageData(imageData, 0, 0);
     rgba.dispose();
-
-    this.videoCanvas.style.backgroundImage = "url(/media/Earth.png)"
-    this.videoCanvas.style.backgroundRepeat = "no-repeat"
-    this.videoCanvas.style.backgroundPosition = "-49px -64px"
 
     // Dispose old tensors.
     tf.dispose([img, src, fgr, pha, r1i, r2i, r3i, r4i]);
@@ -120,8 +120,8 @@ Camera.setupCamera()
 
     const webcam = await tf.data.webcam(this.video);
     const model = await tf.loadGraphModel('./model/model.json');
-    // console.log("加载内容", webcam, model)
 
+    // console.log("加载内容", webcam, model)
     //   console.log(webcam,model)
     // 不断更新摄像头
     window.CAMERA.loop(webcam, model);

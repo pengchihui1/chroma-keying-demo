@@ -19,6 +19,8 @@ async function main() {
 
     const video = document.querySelector('video');
     const canvas = document.querySelector('canvas');
+    canvas.style.transform = "rotateY(180deg)";
+    video.style.transform = "rotateY(180deg)";
 
     const stream = await navigator.mediaDevices.getUserMedia(videoConfig);
     video.srcObject = stream
