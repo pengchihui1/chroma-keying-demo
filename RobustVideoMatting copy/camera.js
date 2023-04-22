@@ -59,6 +59,7 @@ class Camera {
     // Set downsample ratio
     const downsample_ratio = tf.tensor(0.5);
 
+    // while (true) {
     await tf.nextFrame();
     const img = await webcam.capture();
     const src = tf.tidy(() => img.expandDims(0).div(255)); // normalize input
@@ -91,6 +92,8 @@ class Camera {
 
     // Update recurrent states.
     [r1i, r2i, r3i, r4i] = [r1o, r2o, r3o, r4o];
+    // }
+
   }
 
   //  循環調用
