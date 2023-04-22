@@ -1,27 +1,27 @@
 async function main() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error(
-        "Browser API navigator.mediaDevices.getUserMedia not available"
+            "Browser API navigator.mediaDevices.getUserMedia not available"
         );
     }
 
     const videoConfig = {
         audio: true,
         video: {
-        facingMode: "user",
-        width: 592,
-        height: 720,
-        frameRate: {
-            ideal: 30,
-        },
+            facingMode: "user",
+            width: 592,
+            height: 720,
+            frameRate: {
+                ideal: 30,
+            },
         },
     };
 
     const video = document.querySelector('video');
     const canvas = document.querySelector('canvas');
 
-    const stream = await  navigator.mediaDevices.getUserMedia(videoConfig);
-    video.srcObject =stream
+    const stream = await navigator.mediaDevices.getUserMedia(videoConfig);
+    video.srcObject = stream
 
     video.width = 640;
     video.height = 480;
@@ -41,16 +41,16 @@ async function main() {
         const img = await webcam.capture();
         const src = tf.tidy(() => img.expandDims(0).div(255)); // normalize input
         const [fgr, pha, r1o, r2o, r3o, r4o] = await model.executeAsync(
-            {src, r1i, r2i, r3i, r4i, downsample_ratio}, // provide inputs
+            { src, r1i, r2i, r3i, r4i, downsample_ratio }, // provide inputs
             ['fgr', 'pha', 'r1o', 'r2o', 'r3o', 'r4o']   // select outputs
         );
 
         drawMatte(fgr.clone(), pha.clone(), canvas);
-        
-        canvas.style.backgroundImage="url(/media/Earth.png)"
-        canvas.style.backgroundRepeat="no-repeat"
-        canvas.style.backgroundPosition="-49px -64px"
-        
+
+        canvas.style.backgroundImage = "url(/media/Earth.png)"
+        canvas.style.backgroundRepeat = "no-repeat"
+        canvas.style.backgroundPosition = "-49px -64px"
+
         // Dispose old tensors.
         tf.dispose([img, src, fgr, pha, r1i, r2i, r3i, r4i]);
 
@@ -59,7 +59,7 @@ async function main() {
     }
 }
 
-async function drawMatte(fgr, pha, canvas){
+async function drawMatte(fgr, pha, canvas) {
     const rgba = tf.tidy(() => {
         const rgb = (fgr !== null) ?
             fgr.squeeze(0).mul(255).cast('int32') :
