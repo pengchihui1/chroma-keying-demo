@@ -1,0 +1,93 @@
+<html>
+  <header>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title>Демо</title>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+      integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+      crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+      integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+      crossorigin="anonymous"></script>
+
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0"></script> -->
+	<script src="./js/tf.min.js"></script>
+	<script src="./js/body-pix.js"></script>
+	<!-- drlight add mediapipe support -->
+	<script src="./lib/tflite/tflite.js"></script>
+	<script src="./lib/tflite/tflite-simd.js"></script>
+	<script src="./lib/tflite/pipelines.js"></script>
+	<!--<script src="index.js"></script>-->
+
+  </header>
+
+  <main role="main" style="display: grid!important;">
+
+    <section class="jumbotron text-center">
+      <div class="container">
+        <h1>Демо</h1>
+      </div>
+    </section>
+
+    <div class="py-5">
+      <div class="container">
+        <div class="row justify-content-md-center">
+          <div class="col-12">
+            <center>
+              <div class="card mb-4 shadow-sm">
+                <center>
+				<div id="fps_counter" style="display: none; position: relative; z-index: 9999; top: 30px; color: white; align-items: center; justify-content: center; width: fit-content; background-color: rgb(0 0 0 / 30%);"></div>
+				 <video id="video" autoplay playsinline></video>
+                </center>
+                <center>
+				<div id="wait" hidden style="position: absolute; height: 100px; width: 100%; top: 25%; font-size: 36px; text-shadow: 0 0 10px #ffffff, 0 0 5px #ffffff;">Загрузка...</div>
+				<div id="background-container" hidden style="background-image: url(./images/wall.jpg); background-position: center center; background-repeat: no-repeat; background-size: cover; background-color: transparent;"></div>
+				<canvas style="transform: scale(-1, 1); filter: FlipH; z-index: 9999; top: 0; bottom: 0; left: 0; right: 0; margin-left: auto; margin-right: auto;" hidden id="canvas"></canvas>
+                </center>
+                <div class="card-body">
+                  <h5 class="card-title">Видео поток</h5>
+                  <p class="card-text">"Старт" и "стоп" включают и отключают поток с камеры. "Включить обработку" запускает обработку потока.</p>
+                  <div class="justify-content-between align-items-center">
+                    <div class="btn-group btn-group-sm">
+                      <button title="Включить захват камеры" id="start-btn" type="button" class="btn btn-sm btn-outline-success">Старт</button>
+                      <button title="Включить обработку" id="effect-btn" type="button" class="btn btn-sm btn-outline-secondary" disabled>Включить обработку</button>
+                      <button title="Отключить обработку" id="uneffect-btn" type="button" class="btn btn-sm btn-outline-secondary" hidden>Отключить обработку</button>
+					  <select title="Выберите эффект для обработки" id="effect_list">
+						<option title="Заменяет фон на размытый" value="blur">Размытие</option>
+						<!--<option value="background" selected>Кирпичная стена</option> -->
+					  </select>
+					  <select id="pipe_list" title="Выберите движок обработки">
+						  <option title="Обработка на GPU" value="webgl2">webgl</option>
+						  <option title="Обработка на СPU" value="canvas2dcpu">canvas_cpu</option>
+					  </select>
+                      <button title="Отключить захват камеры" title="" id="stop-btn" type="button" class="btn btn-sm btn-outline-danger" disabled>Стоп</button>
+					  <!-- <button id="showfps-btn" type="button" class="btn btn-sm btn-outline-primary" disabled>Показать FPS</button>
+					  <button id="hidefps-btn" type="button" class="btn btn-sm btn-outline-primary" hidden>Скрыть FPS</button>-->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </center>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/video.js"></script>
+  <style>
+    video {
+      -webkit-transform: scaleX(-1);
+      transform: scaleX(-1);
+    }
+  </style>
+</html>
