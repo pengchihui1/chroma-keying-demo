@@ -104,7 +104,6 @@ class Camera {
       if (window.CAMERA) {
         await this.renderOutputResult(webcam, model);
       }
-      console.log(webcam, model)
       window.requestAnimationFrame(() => {
         renderPrediction(webcam, model)
       });
@@ -121,6 +120,8 @@ Camera.setupCamera()
 
     const webcam = await tf.data.webcam(this.video);
     const model = await tf.loadGraphModel('./model/model.json');
+    // console.log("加载内容", webcam, model)
+
     //   console.log(webcam,model)
     // 不断更新摄像头
     window.CAMERA.loop(webcam, model);
