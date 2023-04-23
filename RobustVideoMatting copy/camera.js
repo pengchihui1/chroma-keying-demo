@@ -124,6 +124,9 @@ Camera.setupCamera()
     const webcam = await tf.data.webcam(this.video);
     const model = await tf.loadGraphModel('./model/model.json');
 
+    // const webcam = await tf.data.webcam(this.video);
+    // const model = await tf.loadGraphModel('/disc/disc_17_camWithHandPose/model/model.json');
+
     // console.log("加载内容", webcam, model)
     //   console.log(webcam,model)
     // 不断更新摄像头
