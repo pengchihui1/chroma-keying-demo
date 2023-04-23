@@ -102,7 +102,7 @@ class Camera {
   }
 
 
-  loop(webcam, model, downsample_ratio) {
+  loop(webcam, model) {
     const renderPrediction = async (webcam, model) => {
       if (window.CAMERA) {
         await this.renderOutputResult(webcam, model);
