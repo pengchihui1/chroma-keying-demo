@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simplified Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"
+            crossorigin="anonymous"></script>
+    <script src="https://mrdoob.github.io/stats.js/build/stats.min.js"></script>
+    <style>
+        body {
+            background-color: cyan;
+        }
+
+        .mirror {
+            transform: scaleX(-1);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div>
+        <h2>Sender</h2>
+        <div>
+            <p>
+                <label for="enabled">Enable segmentation and transparency: </label>
+                <input name="enabled" id="enabled" class="senderControls" type="checkbox" checked/>
+            </p>
+            <p>
+                <label for="devices">Select your camera device: </label>
+                <select name="devices" id="devices" class="senderControls"></select>
+            </p>
+            <p>Select a resolution to begin camera capture:
+                <button id="qvga" class="senderControls">QVGA</button>
+                <button id="vga" class="senderControls">VGA</button>
+                <button id="hd" class="senderControls">HD</button>
+                <button id="uhd" class="senderControls">UHD</button>
+            </p>
+        </div>
+    </div>
+    <br>
+    <div>
+        <video id="transparent_selfie" class="mirror" autoplay muted playsinline></video>
+        <div id="senderStats">
+        </div>
+    </div>
+    <br>
+    <button id="call" class="senderControls" disabled>Send through peerConnection</button>
+    <br>
+    <div>
+        <h2>Receiver</h2>
+        <video id="receiver" autoplay muted playsinline></video>
+        <div id="receiverStats">
+        </div>
+
+    </div>
+    <script type="module">
+        if (typeof MediaStreamTrackProcessor === 'undefined' ||
+            typeof MediaStreamTrackGenerator === 'undefined') {
+            alert(
+                'Your browser does not support the experimental MediaStreamTrack API ' +
+                'for Insertable Streams of Media.)')
+        }
+
+
+        const selfieVid = document.querySelector('video#transparent_selfie');
+
+        const deviceSelect = document.querySelector('select#devices');
+
+        const qvgaBtn = document.querySelector('button#qvga');
+        const vgaBtn = document.querySelector('button#vga');
+        const hdBtn = document.querySelector('button#hd');
+        const uhdBtn = document.querySelector('button#uhd');
+
+        const callBtn = document.querySelector('button#call');
+
+        const enabled = document.querySelector('input#enabled');
+
+        let videoWidth = 640;
+        let videoHeight = 480;
+
+        const FRAME_RATE = 30;
+
+        let videoDevices = [];
+
+
+        function addGreenScreen(stream) {
+
+            // Safari & Firefox don't support OffscreenCanvas
+            const greenCanvas = typeof OffscreenCanvas === 'undefined' ? document.createElement("canvas") :
+                new OffscreenCanvas(1, 1);
+            const greenCtx = greenCanvas.getContext('2d');
+
+
+            function addGreen(frame, controller) {
+                const height = frame.codedHeight;
+                const width = frame.codedWidth;
+
+                greenCanvas.height = height;
+                greenCanvas.width = width;
+
+                greenCtx.clearRect(0, 0, width, height);
+                greenCtx.drawImage(frame, 0, 0, width, height);
+
+                // Only overwrite non-existing pixels with green.
+                greenCtx.globalCompositeOperation = 'destination-over';
+                greenCtx.fillStyle = '#00FF00';
+                greenCtx.fillRect(0, 0, width, height);
+
+                const senderFrame = new VideoFrame(greenCanvas);
+                controller.enqueue(senderFrame);
+                frame.close();
+
+            }
+
+            // Add green screen
+            const track = stream.getVideoTracks()[0];
+            const greenProcessor = new MediaStreamTrackProcessor({track});
+            const greenGenerator = new MediaStreamTrackGenerator({kind: 'video'});
+            const greenStream = new MediaStream([greenGenerator]);
+
+            greenProcessor.readable
+                .pipeThrough(new TransformStream({
+                    transform: (frame, controller) => addGreen(frame, controller)
+                }))
+                .pipeTo(greenGenerator.writable)
+                .catch(err => console.error("add green screen error", err));
+
+            return greenStream;
+        }
+
+
+        // Sender
+        async function sendVideo(stream) {
+            console.log("peerConnection starting");
+
+            const [track] = stream.getVideoTracks();
+            const pc = new RTCPeerConnection();
+            pc.addTrack(track, stream);
+
+            pc.onicecandidate = candidate => {
+                const toReceiverEvent = new CustomEvent('candidate', {detail: candidate});
+                document.dispatchEvent(toReceiverEvent);
+            };
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            const toReceiverEvent = new CustomEvent('offer', {detail: offer});
+            document.dispatchEvent(toReceiverEvent);
+
+
+            document.addEventListener('answer', async e => {
+                console.debug(e.detail);
+                await pc.setRemoteDescription(e.detail);
+            });
+        }
+
+
+        // Segment
+        //const ctx = selfieCanvas.getContext('2d');
+
+        const segmentCanvas = new OffscreenCanvas(1, 1);
+        const segmentCtx = segmentCanvas.getContext('2d');
+
+        const selfieSegmentation = new SelfieSegmentation({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+            }
+        });
+        selfieSegmentation.setOptions({
+            modelSelection: 1,
+        });
+
+
+        // Sender stats setup
+        const senderStats = new Stats();
+        document.querySelector('div#senderStats').appendChild(senderStats.dom);
+        senderStats.dom.style.position = 'relative';
+        senderStats.dom.style.display = 'none';
+
+
+        async function segment(frame, controller) {
+            const height = frame.codedHeight;
+            const width = frame.codedWidth;
+
+            segmentCanvas.height = height;
+            segmentCanvas.width = width;
+
+            segmentCtx.drawImage(frame, 0, 0, width, height);
+
+
+            // stats setup
+            senderStats.begin();
+
+            await selfieSegmentation.onResults(async results => {
+
+                segmentCtx.clearRect(0, 0, width, height);
+                segmentCtx.drawImage(results.segmentationMask, 0, 0, width, height);
+
+                // Grab the transparent image
+                // segmentCtx.save();
+                // Add the original video back in only overwriting the masked pixels
+                segmentCtx.globalCompositeOperation = 'source-in';
+                segmentCtx.drawImage(results.image, 0, 0, width, height);
+
+                // ToDo: need to get a different controller
+                const selfieFrame = new VideoFrame(segmentCanvas);
+                controller.enqueue(selfieFrame);
+                frame.close();
+
+                senderStats.end();
+
+            });
+            await selfieSegmentation.send({image: segmentCanvas});
+        }
+
+        // Get Video
+        async function getVideo(width, height) {
+
+            // clean up resources if switching sources
+            if (window.stream)
+                window.stream.getTracks().forEach(track => track.stop());
+
+            // Use the last res when changing cameras
+            if (!width) {
+                width = videoWidth;
+                height = videoHeight;
+            } else {
+                videoHeight = height;
+                videoWidth = width;
+            }
+
+            const videoSource = videoDevices[deviceSelect.selectedIndex || 0]?.deviceId;
+
+            const stream = await navigator.mediaDevices.getUserMedia(
+                {
+                    video:
+                        {
+                            height: height, width: width, frameRate: FRAME_RATE,
+                            deviceId: videoSource ? {exact: videoSource} : undefined
+                        }
+                });
+
+            window.stream = stream;
+            const settings = stream.getVideoTracks()[0].getSettings();
+            console.log(`Capture camera with device ${stream.getVideoTracks()[0].label} at ${settings.width}x${settings.height}`);
+
+            let segmentStream;
+
+            // Option to run without segmentation/transparency for benchmarking
+            if (enabled.checked) {
+                callBtn.disabled = false;
+                senderStats.dom.style.display = 'block';    // show stats
+
+                let [track] = stream.getVideoTracks();
+                const segmentGenerator = new MediaStreamTrackGenerator({kind: 'video'});
+                const processor = new MediaStreamTrackProcessor({track});
+                segmentStream = new MediaStream([segmentGenerator]);
+
+                selfieVid.srcObject = segmentStream;
+
+                processor.readable.pipeThrough(new TransformStream({
+                    transform: (frame, controller) => segment(frame, controller)
+                }))
+                    .pipeTo(segmentGenerator.writable)
+                    .catch(err => console.error("green screen generator error", err));
+            } else {
+                segmentStream = stream;
+                selfieVid.srcObject = stream;
+                callBtn.disabled = false;
+
+            }
+
+
+            // Note: doesn't work (change to let sendStream
+            // sendStream.onaddtrack = (track)=> showTransparentSelfie(track);
+            // sendStream.onactive = (track)=> showTransparentSelfie(track);
+
+
+            callBtn.onclick = async () => {
+                // ToDo: replace track to allow cam switch when peerConnection is open
+
+                // Disable controls since the peerConnection won't update
+                document.querySelectorAll('.senderControls').forEach(element => element.disabled = true);
+
+                if (enabled.checked) {
+                    const greenStream = addGreenScreen(segmentStream);
+                    await sendVideo(greenStream);
+                } else {
+                    await sendVideo(stream);
+                }
+
+            };
+
+        }
+
+        async function start() {
+            // allow camera selection
+            let devices = await navigator.mediaDevices.enumerateDevices();
+            videoDevices = devices.filter(device => device.kind === 'videoinput');
+            videoDevices.forEach(device => {
+                const option = document.createElement('option');
+                option.text = device.label;
+                deviceSelect.appendChild(option);
+            });
+
+            deviceSelect.onchange = () => getVideo();
+
+            qvgaBtn.onclick = () => getVideo(320, 240);
+            vgaBtn.onclick = () => getVideo(640, 480);
+            hdBtn.onclick = () => getVideo(1280, 720);
+            uhdBtn.onclick = () => getVideo(1920, 1080);
+        }
+
+        start().catch(err => console.error(err));
+    </script>
+
+    <!-- Receiver -->
+    <script type="module">
+
+        // Transparency
+        function addAlpha(imageData) {
+
+            let data = imageData.data;
+            const gFloor = 105;         // consider any green above this value to be transparent
+            const rbCeiling = 80;       // highest value for red and blue to be considered transparent
+
+            for (let r = 0, g = 1, b = 2, a = 3; a < data.length; r += 4, g += 4, b += 4, a += 4) {
+                if (data[r] <= rbCeiling && data[b] <= rbCeiling && data[g] >= gFloor)
+                    data[a] = 0;
+            }
+            return imageData;
+        }
+
+        // Receiver
+        const receiverOffScreen = typeof OffscreenCanvas === 'undefined' ? document.createElement("canvas") :
+            new OffscreenCanvas(1, 1);
+        const receiverCtx = receiverOffScreen.getContext("2d");
+
+        // stats setup
+        // let lastFrameTime = new Date();
+        const recStats = new Stats();
+        document.querySelector('div#receiverStats').appendChild(recStats.dom);
+        recStats.dom.style.position = 'relative';
+        recStats.dom.style.display = 'none';
+
+        function addTransparency(frame, controller) {
+            recStats.begin();
+
+            const height = frame.codedHeight;
+            const width = frame.codedWidth;
+
+            receiverOffScreen.height = height;
+            receiverOffScreen.width = width;
+
+            receiverCtx.drawImage(frame, 0, 0, width, height);
+            let imageData = receiverCtx.getImageData(0, 0, width, height);
+            let transparentImageData = addAlpha(imageData);
+            receiverCtx.putImageData(transparentImageData, 0, 0);
+
+            const newFrame = new VideoFrame(receiverOffScreen);
+            controller.enqueue(newFrame);
+            frame.close();
+
+            recStats.end();
+        }
+
+        document.addEventListener('offer', async e => {
+            console.debug(e.detail);
+
+            const pc = new RTCPeerConnection();
+
+            pc.ontrack = async e => {
+                console.debug(e);
+                const {track} = e;
+
+                const processor = new MediaStreamTrackProcessor({track});
+
+                const generator = new MediaStreamTrackGenerator({kind: 'video'});
+                const transparentStream = new MediaStream([generator]);
+                document.querySelector('video#receiver').srcObject = transparentStream;
+
+                await processor.readable.pipeThrough(new TransformStream({
+                    transform: (frame, controller) => addTransparency(frame, controller)
+                })).pipeTo(generator.writable);
+
+            };
+
+            document.addEventListener('candidate', async e => {
+                console.debug(e.detail);
+                await pc.addIceCandidate(e.detail.candidate);
+            });
+
+            await pc.setRemoteDescription(e.detail);
+
+            window.receiverPc = pc;
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            const toSenderEvent = new CustomEvent('answer', {detail: answer});
+            document.dispatchEvent(toSenderEvent);
+
+            recStats.dom.style.display = 'block';
+
+        });
+    </script>
+</div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>使用 TensorFlow.js 进行 Webcam 视频去背景</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.6.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.0/dist/body-pix.min.js"></script>
+  </head>
+  <body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <script>
+      // 获取视频元素和画布元素
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const context = canvas.getContext('2d');
+
+      // 定义模型和相关参数
+      let model;
+      const segmentationThreshold = 0.5;
+      const backgroundBlurAmount = 5;
+
+      // 加载模型
+      async function loadModel() {
+        model = await tf.loadGraphModel('./model/model.json');
+      }
+
+      // 处理视频流
+      async function processVideo() {
+        const segmentation = await model.segmentPerson(video, {
+          flipHorizontal: false,
+          internalResolution: 'medium',
+          segmentationThreshold: segmentationThreshold
+        });
+        bodyPix.drawBokehEffect(
+          canvas, video, segmentation, backgroundBlurAmount, segmentationThreshold);
+        requestAnimationFrame(processVideo);
+      }
+
+      // 获取 Webcam 视频流并播放
+      navigator.mediaDevices.getUserMedia({video: true})
+        .then((stream) => {
+          video.srcObject = stream;
+          video.play();
+        });
+
+      // 加载模型并开始处理视频
+      loadModel().then(() => {
+        processVideo();
+      });
+    </script>
+  </body>
+</html>
