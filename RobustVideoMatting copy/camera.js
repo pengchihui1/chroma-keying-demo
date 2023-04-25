@@ -2,8 +2,17 @@ class Camera {
   constructor() {
     // 游玩頁面攝像頭video
     this.video = document.getElementById("video");
-    this.videoCanvas = document.querySelector('canvas');
+    this.outputCanvas = document.querySelector('canvas');
   }
+
+  // Set initial recurrent state
+  r1i = tf.tensor(0.)
+  r2i = tf.tensor(0.);
+  r3i = tf.tensor(0.);
+  r4i = tf.tensor(0.); 
+
+  // Set downsample ratio
+  downsample_ratio = tf.tensor(0.3);
 
   static async setupCamera(cameraParam) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -60,38 +69,42 @@ class Camera {
     const downsample_ratio = tf.tensor(0.5);
 
     // while (true) {
-              await tf.nextFrame();
-              const img = await webcam.capture();
-              const src = tf.tidy(() => img.expandDims(0).div(255)); // normalize input
-              const [fgr, pha, r1o, r2o, r3o, r4o] = await model.executeAsync(
-                { src, r1i, r2i, r3i, r4i, downsample_ratio }, // provide inputs
-                ['fgr', 'pha', 'r1o', 'r2o', 'r3o', 'r4o']   // select outputs
-              );
+      await tf.nextFrame();
+      const img = await tf.browser.fromPixelsAsync(this.video);
+      const src = tf.tidy(() => img.expandDims(0).div(255)); // normalize input
+      const [fgr, pha, r1o, r2o, r3o, r4o] = await window.model.executeAsync(
+        { src, r1i: this.r1i, r2i: this.r2i, r3i: this.r3i, r4i: this.r4i, downsample_ratio: this.downsample_ratio }, // provide inputs
+        ['fgr', 'pha', 'r1o', 'r2o', 'r3o', 'r4o']   // select outputs
+      );
 
-              const rgba = tf.tidy(() => {
-                const rgb = (fgr !== null) ?
-                  fgr.squeeze(0).mul(255).cast('int32') :
-                  tf.fill([pha.shape[1], pha.shape[2], 3], 255, 'int32');
-                const a = (pha !== null) ?
-                  pha.squeeze(0).mul(255).cast('int32') :
-                  tf.fill([fgr.shape[1], fgr.shape[2], 1], 255, 'int32');
-                return tf.concat([rgb, a], -1);
-              });
-              fgr && fgr.dispose();
-              pha && pha.dispose();
-              const [height, width] = rgba.shape.slice(0, 2);
-              const pixelData = new Uint8ClampedArray(await rgba.data());
-              const imageData = new ImageData(pixelData, width, height);
-              this.videoCanvas.width = width;
-              this.videoCanvas.height = height;
-              this.videoCanvas.getContext('2d').putImageData(imageData, 0, 0);
-              rgba.dispose();
+      const rgba = tf.tidy(() => {
+        const rgb = (fgr !== null) ?
+          fgr.squeeze(0).mul(255).cast('int32') :
+          tf.fill([pha.shape[1], pha.shape[2], 3], 255, 'int32');
+        const a = (pha !== null) ?
+          pha.squeeze(0).mul(255).cast('int32') :
+          tf.fill([fgr.shape[1], fgr.shape[2], 1], 255, 'int32');
+        return tf.concat([rgb, a], -1);
+      });
+      fgr && fgr.dispose();
+      pha && pha.dispose();
+      const [height, width] = rgba.shape.slice(0, 2);
+      const pixelData = new Uint8ClampedArray(await rgba.data());
+      const imageData = new ImageData(pixelData, width, height);
+      this.outputCanvas.width = width;
+      this.outputCanvas.height = height;
+      // console.log(this.videoCanvas)
+      this.outputCanvas.getContext('2d').putImageData(imageData,  0,0);
+      rgba.dispose();
 
-              // Dispose old tensors.
-              tf.dispose([img, src, fgr, pha, r1i, r2i, r3i, r4i]);
+      // Dispose old tensors.
+      tf.dispose([img, src, fgr, pha, this.r1i, this.r2i, this.r3i, this.r4i]);
 
-              // Update recurrent states.
-              [r1i, r2i, r3i, r4i] = [r1o, r2o, r3o, r4o];
+      // Update recurrent states.
+      this.r1i = r1o;
+      this.r2i = r2o;
+      this.r3i = r3o;
+      this.r4i = r4o;
     // }
 
   }
