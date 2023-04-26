@@ -3,11 +3,31 @@
         <!-- <script src="./main.js"> </script> -->
     </head>
     <body>
+
+        <button onclick="test()">拍照</button>
         <video id="video" style="transform: rotateY(180deg);" style="width: 100px; height: 100px;"></video>
         <canvas id="canvas" style="transform: rotateY(180deg);"></canvas>
 
         <script src="./lib/tfjs/common/tf.min.js"></script>
         <script src="./camera.js"> </script>
-         
+
+
+        <script>
+            async function test(){
+                const outCanvas=document.getElementById("canvas")
+                const result= await getFirstFrameSrc(outCanvas)
+                console.log("結果",result)
+            }
+
+            // 拍照獲取圖片（blob），拍照的圖片
+            async function getFirstFrameSrc(outputCanvas = null) {
+            if (!outputCanvas) {
+                return null;
+            }
+            return new Promise((res) => {
+                outputCanvas.toBlob(res);
+            });
+            }
+        </script>
     </body>
 </html>

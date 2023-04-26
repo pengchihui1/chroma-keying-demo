@@ -58,10 +58,10 @@ class Camera {
 
   // 不斷出發的攝像頭檢測
   async renderVideoCanvasResult(webcam, model) {
-    this.videoCanvas.style.backgroundImage = "url(/media/Earth.png)"
-    this.videoCanvas.style.backgroundRepeat = "no-repeat"
-    this.videoCanvas.style.backgroundPosition = "-49px -64px"
-    this.videoCanvas.style.transform = "rotateY(180deg)";
+    this.outputCanvas.style.backgroundImage = "url(/media/Earth.png)"
+    this.outputCanvas.style.backgroundRepeat = "no-repeat"
+    this.outputCanvas.style.backgroundPosition = "-49px -64px"
+    this.outputCanvas.style.transform = "rotateY(180deg)";
     // Set initial recurrent state
     let [r1i, r2i, r3i, r4i] = [tf.tensor(0.), tf.tensor(0.), tf.tensor(0.), tf.tensor(0.)];
 
